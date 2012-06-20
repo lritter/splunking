@@ -18,7 +18,7 @@ module Splunking
       option_parser.parse!(argv)
       options[:port] ||= ::Splunking::Client::DEFAULT_SPLUNK_SERVICE_PORT
       options[:logger] ||= Logger.new($stderr)
-      options[:log_level] ||= Logger::Error
+      options[:log_level] ||= Logger::ERROR
       options[:logger].level = options[:log_level]
     end
 
