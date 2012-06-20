@@ -41,5 +41,19 @@ module Splunking
         super
       end
     end
+
+    def to_hash
+      {}.tap do |hsh|
+        result_data.children.each do |node|
+          next if node.to_s.strip == ''
+          hsh[node['k']] = node.value.text.strip
+        end
+      end
+    end
+
+   def to_json(*a)
+    to_hash.to_json(*a)
+   end 
+
   end
 end

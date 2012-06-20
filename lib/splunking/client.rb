@@ -4,10 +4,17 @@ require 'nokogiri'
 
 module Splunking
   class Client
+    DEFAULT_SPLUNK_SERVICE_PORT = 8089 unless const_defined?('DEFAULT_SPLUNK_SERVICE_PORT')
     attr_reader :session
 
-    def self.build(username, password, host, port=8089)
-      session = Session.new(username, password, host, port)
+    def self.build(options={})
+      default_options = {
+        :port   => DEFAULT_SPLUNK_SERVICE_PORT,
+        :logger => Logger.new($stderr)
+      }
+
+      o = default_options.merge(options)
+      session = Session.new(o[:username], o[:password], o[:host], o[:port], o[:logger])
       instance = new(session)
       instance
     end

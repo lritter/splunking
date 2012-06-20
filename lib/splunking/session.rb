@@ -7,17 +7,14 @@ module Splunking
     attr_reader :host
     attr_reader :port
     attr_reader :default_headers
+    attr_reader :logger
 
-    def self.create!(username, password, host, port=8089)
-      instance = new(username, password, host, port)
-      instance
-    end
-
-    def initialize(username, password, host, port=8089)
+    def initialize(username, password, host, port=8089, logger=Logger.new($stderr))
       @username = username
       @password = password
       @host = host
       @port = port
+      @logger = logger
     end
 
     def get(path, params={}, headers={})
@@ -51,10 +48,10 @@ module Splunking
     private
 
     def http
-      Faraday.new(:url => "https://#{host}:#{port}", :ssl => {:verify => false}) do |builder|
-        builder.use Faraday::Request::UrlEncoded  # convert request params as "www-form-urlencoded"
-        builder.use Faraday::Response::Logger     # log the request to STDOUT
-        builder.use Faraday::Adapter::NetHttp     # make http requests with Net::HTTP
+      @http ||= Faraday.new(:url => "https://#{host}:#{port}", :ssl => {:verify => false}) do |builder|
+        builder.use Faraday::Request::UrlEncoded            # convert request params as "www-form-urlencoded"
+        builder.use Faraday::Response::Logger, self.logger  # Log request/response info
+        builder.use Faraday::Adapter::NetHttp               # make http requests with Net::HTTP
 
         # builder.use FaradayMiddleware::ParseAtom,  :content_type => /\bxml$/
         # builder.use FaradayMiddleware::ParseJson, :content_type => /\bjson$/

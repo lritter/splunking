@@ -42,7 +42,6 @@ module Splunking
       default_params = { 'count' => DEFAULT_MAX_RESULTS }
       response = session.get("#{job_path}/results", default_params.merge(params))
       process_results(response)
-      # JSON.parse(response.body)
     end
 
     private
