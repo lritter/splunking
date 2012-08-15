@@ -1,6 +1,7 @@
 require 'splunking/session'
 require 'splunking/job'
 require 'nokogiri'
+require 'logger'
 
 module Splunking
   class Client
