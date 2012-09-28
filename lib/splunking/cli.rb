@@ -8,6 +8,7 @@ module Splunking
   class CLI
     attr_reader :argv
     attr_reader :options
+    attr_reader :configuration
 
     def initialize(argv)
       @argv = argv
@@ -16,10 +17,9 @@ module Splunking
     def parse_args
       @options = {}
       option_parser.parse!(argv)
-      options[:port] ||= ::Splunking::Client::DEFAULT_SPLUNK_SERVICE_PORT
-      options[:logger] ||= Logger.new($stderr)
-      options[:log_level] ||= Logger::ERROR
-      options[:logger].level = options[:log_level]
+      
+      @configuration = ::Splunking::Client::Configuration.new(options)
+      @configuration.logger.level = options[:log_level] || Logger::ERROR
     end
 
     def validate_options
@@ -37,7 +37,6 @@ module Splunking
     def run
       parse_args
       validate_options
-      puts JSON.pretty_generate(options)
       results = search
       puts format_results(results)#.map(&:to_hash)
     rescue OptionParser::InvalidOption, OptionParser::MissingArgument => e
@@ -52,7 +51,7 @@ module Splunking
 
     private
     def client
-      ::Splunking::Client.build(options)
+      ::Splunking::Client.build(configuration)
     end
 
     def search

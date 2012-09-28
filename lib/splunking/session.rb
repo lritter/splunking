@@ -2,23 +2,14 @@ require 'faraday'
 
 module Splunking
   class Session
-    attr_reader :username
-    attr_reader :password
-    attr_reader :host
-    attr_reader :port
+    attr_reader :configuration
     attr_reader :default_headers
-    attr_reader :logger
 
-    def initialize(username, password, host, port=8089, logger=Logger.new($stderr))
-      @username = username
-      @password = password
-      @host = host
-      @port = port
-      @logger = logger
+    def initialize(configuration)
+      @configuration = configuration
     end
 
     def get(path, params={}, headers={})
-      # ensure_authenticated
       raw_get(path, params, headers)
     end
 
@@ -27,7 +18,6 @@ module Splunking
     end
 
     def post(path, data, headers={})
-      # ensure_authenticated
       raw_post(path, data, headers)
     end
 
@@ -48,20 +38,14 @@ module Splunking
     private
 
     def http
-      @http ||= Faraday.new(:url => "https://#{host}:#{port}", :ssl => {:verify => false}) do |builder|
+      @http ||= Faraday.new(:url => "https://#{configuration.host}:#{configuration.port}", :ssl => {:verify => false}) do |builder|
         builder.use Faraday::Request::UrlEncoded            # convert request params as "www-form-urlencoded"
-        builder.use Faraday::Response::Logger, self.logger  # Log request/response info
+        builder.use Faraday::Response::Logger, configuration.logger  # Log request/response info
         builder.use Faraday::Adapter::NetHttp               # make http requests with Net::HTTP
 
         # builder.use FaradayMiddleware::ParseAtom,  :content_type => /\bxml$/
         # builder.use FaradayMiddleware::ParseJson, :content_type => /\bjson$/
-      end.tap { |conn| conn.basic_auth(username, password) }
-    end
-
-    def ensure_authenticated
-      if !authenticated?
-        add_default_header('Authorization', "Splunk #{authenticate!}")
-      end
+      end.tap { |conn| conn.basic_auth(configuration.username, configuration.password) }
     end
   end
 end

@@ -5,17 +5,28 @@ require 'logger'
 
 module Splunking
   class Client
-    DEFAULT_SPLUNK_SERVICE_PORT = 8089 unless const_defined?('DEFAULT_SPLUNK_SERVICE_PORT')
+    class Configuration
+      DEFAULT_SPLUNK_SERVICE_PORT = 8089 unless const_defined?('DEFAULT_SPLUNK_SERVICE_PORT')
+
+      attr_reader :username
+      attr_reader :password
+      attr_reader :host
+      attr_reader :port
+      attr_reader :logger
+
+      def initialize(options = {})
+        @username = options.fetch(:username)
+        @password = options.fetch(:password)
+        @host     = options.fetch(:host)
+        @port     = options.fetch(:port, DEFAULT_SPLUNK_SERVICE_PORT)
+        @logger   = options[:logger] || Logger.new($stderr) 
+      end
+    end
+    
     attr_reader :session
 
-    def self.build(options={})
-      default_options = {
-        :port   => DEFAULT_SPLUNK_SERVICE_PORT,
-        :logger => Logger.new($stderr)
-      }
-
-      o = default_options.merge(options)
-      session = Session.new(o[:username], o[:password], o[:host], o[:port], o[:logger])
+    def self.build(configuration)
+      session = Session.new(configuration)
       instance = new(session)
       instance
     end
