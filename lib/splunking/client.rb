@@ -37,7 +37,6 @@ module Splunking
     end
 
     def post(path, data, headers={})
-      puts data.inspect
       http.post(path, data, headers)
     end
 

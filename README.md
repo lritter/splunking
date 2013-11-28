@@ -2,10 +2,19 @@
 
 A Splunk API client.... waaaay preliminary and experiemental...
 
-# Basic idea
+## CLI Usage
 
-    require 'lib/splunking/client'
+To print raw search results as xml:
 
-    c = Splunking::Client.build(:username => 'user', :password => 'pass', :host => 'splunk.foo.com')
-    j = c.search('savedsearch my_saved_search').tap { |job| job.wait }
-    j.results
+    ./bin/splunking -u <user> -p <password> --host <splunk-host> --port 8089 -s 'search "needle"' --params 'earliest_time=-15m'
+
+## Basic gem usage
+
+    require 'splunking'
+
+    client = Splunking::Client.build(...)
+    search_job = client.search("search string", {... extra params ...})
+    search_job.wait! # block until job is completed or failed
+    search_job.results
+
+This will return xml.  I recomend using Hpricot or similar to process.

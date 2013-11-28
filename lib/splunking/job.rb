@@ -21,6 +21,7 @@ module Splunking
 
     def self.build_from_job_response(client, response)
       job_id = (Hpricot(response)/"/response/sid").inner_html
+      client.logger.info("Search Job ID: #{job_id}")
       new(client, job_id)
     end
 
