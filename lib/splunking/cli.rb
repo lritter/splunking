@@ -3,6 +3,7 @@ require 'splunking/client'
 require 'logger'
 require 'json'
 require 'pp'
+# require 'faraday/utils'
 
 module Splunking
   class CLI
@@ -16,6 +17,7 @@ module Splunking
 
     def parse_args
       @options = {}
+      @options[:params] ||= {}
       option_parser.parse!(argv)
       
       @configuration = ::Splunking::Client::Configuration.new(options)
@@ -38,7 +40,8 @@ module Splunking
       parse_args
       validate_options
       results = search
-      puts format_results(results)#.map(&:to_hash)
+      puts results
+      # puts format_results(results)#.map(&:to_hash)
     rescue OptionParser::InvalidOption, OptionParser::MissingArgument => e
       $stderr.puts e.message
       $stderr.puts option_parser
@@ -51,11 +54,11 @@ module Splunking
 
     private
     def client
-      ::Splunking::Client.build(configuration)
+      ::Splunking::Client.new(configuration)
     end
 
     def search
-      job = client.search(options[:search])
+      job = client.search(options[:search], options[:params])
       job.wait
       job.results
     end
@@ -86,6 +89,10 @@ module Splunking
 
         opts.on("-s", "--search SEARCH", "Search as you would type it into splunk") do |s|
           options[:search] = s
+        end
+
+        opts.on("--params params", "extra params as urlencoded string for operation") do |params|
+          options[:params] = Faraday::Utils.parse_query(params)
         end
       end
     end

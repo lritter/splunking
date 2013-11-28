@@ -1,33 +1,45 @@
-require 'splunking/session'
 require 'splunking/search_result'
-require 'nokogiri'
+require 'hpricot'
 
 module Splunking
   class Job
     JOBS_BASE_URL = "/services/search/jobs" unless const_defined?('JOBS_BASE_URL')
     DEFAULT_MAX_RESULTS = 50 unless const_defined?('DEFAULT_MAX_RESULTS')
     DEFAULT_OUTPUT_MODE = 'xml' unless const_defined?('DEFAULT_OUTPUT_MODE')
+    FAILED_STATUS = 'FAILED' unless const_defined?('FAILED_STATUS')
+    DONE_STATUS = 'DONE' unless const_defined?('DONE')
 
     attr_reader :job_id
-    attr_reader :session
+    attr_reader :client
+    attr_reader :params
+    attr_reader :last_status_response
+    attr_reader :last_results_response
 
-    def initialize(session, job_id)
-      @session = session
+    def self.create(client, query, params={})
+      build_from_job_response(client, client.post(JOBS_BASE_URL, {'search' => query}.merge(params)).body)
+    end
+
+    def self.build_from_job_response(client, response)
+      job_id = (Hpricot(response)/"/response/sid").inner_html
+      new(client, job_id)
+    end
+
+    def initialize(client, job_id)
+      @client = client
       @job_id = job_id
     end
 
     def status
-      response = session.get(job_path)
-      Nokogiri::Slop(response.body).xpath("//s:key[@name='isDone']").text.to_i
+      @last_status_response = Hpricot(client.get(job_path).body)
+      (last_status_response/("entry/content//[@name='dispatchState']")).first.inner_html
     end
 
     def cancel
-      response = session.post("#{job_path}/control", 'action' => 'cancel')
-      puts response.inspect
+      client.delete(job_path).body
     end
 
     def completed?
-      status == 1
+      is_completed?(status)
     end
 
     def wait(interval = 1)
@@ -40,30 +52,18 @@ module Splunking
       # TODO: should follow the link @rel=results in the jobs status response
       # TODO: paging?
       default_params = { 'count' => DEFAULT_MAX_RESULTS }
-      response = session.get("#{job_path}/results", default_params.merge(params))
-      process_results(response)
+      response = client.get("#{job_path}/results", default_params.merge(params))
+      response.body
     end
 
     private
 
-    def process_results(response)
-      body = response.body.strip
+    def is_completed?(s)
+      s == DONE_STATUS
+    end
 
-      if !body.empty?
-        parsed_response = Nokogiri::Slop(body)
-        result = parsed_response.results.result
-        if result.respond_to?("length")
-          # Multiple Results, build array
-          result.map do |resultObj|
-            SearchResult.new(resultObj)
-          end
-        else
-          # Single results object
-          [SearchResult.new(result)]
-        end
-      else
-        []
-      end
+    def is_failed?(s)
+      s == FAILED_STATUS
     end
 
     def job_path

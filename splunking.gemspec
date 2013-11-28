@@ -21,5 +21,6 @@ Gem::Specification.new do |s|
   s.add_dependency( 'faraday_middleware')
 
   s.add_dependency( 'json')
+  s.add_dependency( 'hpricot')
   s.add_dependency( 'nokogiri')
 end
